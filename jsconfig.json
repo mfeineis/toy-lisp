@@ -1,0 +1,12 @@
+{
+    "compilerOptions": {
+        "strict": true,
+        "alwaysStrict": true,
+        "module": "es6",
+        "target": "ES3",
+        "checkJs": true
+    },
+    "exclude": [
+        "dist"
+    ]
+}
