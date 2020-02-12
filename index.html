@@ -11,7 +11,9 @@
     <pre id="source" style="background: #eee; border-left: 4px #aaa solid; padding-left: 5px">
 
 ;; Some comment
-(module app/hello (exposing data inc)
+(module app/hello { :version 0.1.0 }
+    "This is a module demonstrating this toy lisp"
+    (export data inc)
     (import js) ;; Another comment
 
     (let decrement (\ [i] (- i 1)))
@@ -22,6 +24,18 @@
     (let data { :answer (inc 41), :vector [1 2 3], :list '(4 5), :inc inc })
 
     (js/console.log (:answer data) inc)
+)
+
+(module app/counter
+    (export render)
+    (import dom :as h)
+    (import mvu)
+    (import app/hello inc)
+    (fn render [i]
+        [:button { :onClick (\ [e] (inc i) } "-1"]
+        (h/text i)
+        [h/button { :onClick (\ [e] (inc i) } "+1"]
+    )
 )
 
     </pre>
