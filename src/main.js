@@ -261,8 +261,8 @@
     function parse(src, builders) {
         const stream = tokenize(src);
         const ast = { root: [] };
-        let scope = ast.root;
         const path = [];
+        let scope = ast.root;
         let current = null;
         builders = builders || defaultBuilders;
 
@@ -277,13 +277,70 @@
         return ast;
     }
 
-    function compile(ast) {
-        console.log(ast);
+    const visitors = {
+        comment: function (current) {
+            console.log(current.text);
+        },
+        whitespace: function (current) {
+            console.log("<", current.text.replace(/\w/, "*"), ">");
+        },
+        call: function (current, env) {
+            console.log("call", current);
+            const args = [];
+            let fn = null;
+            let item = null;
+            for (let j = 0; j < current.items.length; j += 1) {
+                item = current.items[j];
+                switch (item.type) {
+                case "symbol":
+                    if (!fn && item.text in env.scope) {
+                        fn = env.scope[item.text];
+                    }
+                    break;
+                case "string":
+                    if (fn) {
+                        args.push(item.text);
+                    }
+                    break;
+                default:
+                    break;
+                }
+            }
+            if (fn) {
+                fn.apply(null, args);
+            }
+        },
+    };
+
+    function compile(ast, env) {
+        let i = 0;
+        let current = ast.root[i];
+        while (current) {
+            const visitor = visitors[current.type];
+            visitor(current, env);
+            i += 1;
+            current = ast.root[i];
+        }
     }
 
     return {
         eval: function (src) {
-            return compile(parse(src));
+            const ast = parse(src);
+            const env = {
+                "parent": null,
+                "scope": {
+                    "js/console.log": console.log,
+                    //"module": function (meta) {
+                    //    const name = meta.name;
+                    //    const bindings = meta.bindings;
+                    //    const exports = meta.exports;
+                    //    const imports = meta.imports;
+                    //    const args = meta.args;
+
+                    //},
+                },
+            };
+            return compile(ast, env);
         },
         parse: parse,
         compile: compile,
