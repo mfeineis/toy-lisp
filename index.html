@@ -8,7 +8,7 @@
 </head>
 
 <body>
-    <pre id="source" style="background: #eee; border-left: 4px #aaa solid; padding-left: 5px">
+    <script type="application/x-lisp">
 
 (js/console.log "Hello" "," "World" "!")
 
@@ -43,12 +43,16 @@
     )
 )
 
-    </pre>
+(require app/hello)
+
+    </script>
+
+    <pre id="source" style="background: #eee; border-left: 4px #aaa solid; padding-left: 5px"></pre>
     <script>
 
-        const sourceText = document.querySelector("#source").innerText;
-        const program = Compiler.eval(sourceText);
-
+    const sourceText = document.querySelector("script[type='application/x-lisp']").innerText;
+    document.querySelector("#source").innerText = sourceText;
+    const program = Compiler.eval(sourceText);
 
     </script>
 </body>
