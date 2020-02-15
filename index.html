@@ -27,10 +27,13 @@
 )
 
 (module app/counter
+    "The mandatory counter example"
     (export render)
-    (import dom :as h)
-    (import mvu)
-    (import app/hello inc)
+    (import
+         dom :as h
+         mvu
+         app/hello :as inc
+    )
     (fn render [i]
         [:button { :onClick (\ [e] (inc i) } "-1"]
         (h/text i)
