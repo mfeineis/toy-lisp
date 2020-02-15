@@ -160,17 +160,17 @@
         },
         "(": function (current, scope, stream, path) {
             const tks = [current.value];
-            const args = [];
+            const items = [];
 
             scope.push({
                 type: "call",
-                args: args,
+                items: items,
                 lookback: scope.length > 0 ? scope[scope.length - 1] : null,
                 tks: tks,
             });
 
             path.push(scope);
-            return args;
+            return items;
         },
         ")": function (current, scope, _, path) {
             const tks = [current.value];
@@ -178,16 +178,16 @@
         },
         "[": function (current, scope, _, path) {
             const tks = [current.value];
-            const args = [];
+            const items = [];
 
             scope.push({
                 type: "vector",
-                args: args,
+                items: items,
                 tks: tks,
             });
 
             path.push(scope);
-            return args;
+            return items;
         },
         "]": function (current, scope, _, path) {
             const tks = [current.value];
@@ -235,7 +235,7 @@
         },
         "\"": function (current, scope, stream, path) {
             const tks = [current.value];
-            const args = [];
+            const items = [];
 
             const node = {
                 type: "string",
@@ -249,10 +249,10 @@
                     break;
                 }
                 tks.push(current.value);
-                args.push(current.value)
+                items.push(current.value);
             }
 
-            node.text = args.map(function (val) { return val.token; }).join("");
+            node.text = items.map(function (val) { return val.token; }).join("");
         },
     };
 
