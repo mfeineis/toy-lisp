@@ -10,12 +10,12 @@
 <body>
     <script type="application/x-lisp">
 
-(js/console.log "Hello" "," "World" "!")
+(js/console.log "Hello, World!" "...on steroids")
 
 ;; Some comment
 (module app/hello { :version 0.1.0 }
     "This is a module demonstrating this toy lisp"
-    (export data inc)
+    (export inc)
     (import js) ;; Another comment
 
     (let decrement (\ [i] (- i 1)))
@@ -32,14 +32,14 @@
     "The mandatory counter example"
     (export render)
     (import
-         dom :as h
-         mvu
-         app/hello :as inc
+         dom :as d :exposing [text :as t]
+         mvu :from "https://github.com/mfeineis/toy-lisp/lib/mvu"
+         app/hello :exposing [inc]
     )
     (fn render [i]
-        [:button { :onClick (\ [e] (inc i) } "-1"]
-        (h/text i)
-        [h/button { :onClick (\ [e] (inc i) } "+1"]
+        (d/button { :onClick (\ [e] (inc i) } "-1")
+        (t (int/toString i))
+        (d/button { :onClick (\ [e] (inc i) } "+1")
     )
 )
 
