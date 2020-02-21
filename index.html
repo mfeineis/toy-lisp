@@ -15,8 +15,11 @@
 ;; Some comment
 (module app/hello { :version 0.1.0 }
     `This is a module demonstrating this toy lisp`
-    (export inc)
-    (import js) ;; Another comment
+    (export inc) ;; Another comment
+    (import
+        sys/js :as js
+        mfeineis/some-lib :as lib
+    )
 
     (let decrement (\ [i] (- i 1)))
     (let increment (λ [i] (+ i 1)))
@@ -33,13 +36,14 @@
     (export render)
     (import
          core/dom :as d
-         mfeineis/mvu :as mvu :from `https://github.com/mfeineis/toy-lisp/lib/mvu`
+         core/int :as int
+         lab/mvu :as mvu
          app/hello :as h
     )
     (fn render [i]
-        (d/button { :onClick (\ [e] (h/inc i) } `-1`)
+        (d/button { :onClick (lambda [e] (h/inc i) } `-1`)
         (d/text (int/toString i))
-        (d/button { :onClick (\ [e] (h/inc i) } `+1`)
+        (d/button { :onClick (fn [e] (h/inc i) } `+1`)
     )
 )
 
