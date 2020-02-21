@@ -10,11 +10,11 @@
 <body>
     <script type="application/x-lisp">
 
-(js/console.log "Hello, World!" "...on steroids")
+(js/console.log `Hello, World!` `...on steroids`)
 
 ;; Some comment
 (module app/hello { :version 0.1.0 }
-    "This is a module demonstrating this toy lisp"
+    `This is a module demonstrating this toy lisp`
     (export inc)
     (import js) ;; Another comment
 
@@ -22,24 +22,24 @@
     (let increment (λ [i] (+ i 1)))
     (fn inc [i] (+ i 1))
 
-    (let greeting "Godspeed You, Black Emperor!")
+    (let greeting `Godspeed You, Black Emperor!`)
     (let data { :answer (inc 41), :vector [1 2 3], :list '(4 5), :inc inc })
 
     (js/console.log (:answer data) inc)
 )
 
 (module app/counter
-    "The mandatory counter example"
+    `The mandatory counter example`
     (export render)
     (import
-         dom :as d :exposing [text :as t]
-         mvu :from "https://github.com/mfeineis/toy-lisp/lib/mvu"
-         app/hello :exposing [inc]
+         core/dom :as d
+         mfeineis/mvu :as mvu :from `https://github.com/mfeineis/toy-lisp/lib/mvu`
+         app/hello :as h
     )
     (fn render [i]
-        (d/button { :onClick (\ [e] (inc i) } "-1")
-        (t (int/toString i))
-        (d/button { :onClick (\ [e] (inc i) } "+1")
+        (d/button { :onClick (\ [e] (h/inc i) } `-1`)
+        (d/text (int/toString i))
+        (d/button { :onClick (\ [e] (h/inc i) } `+1`)
     )
 )
 
