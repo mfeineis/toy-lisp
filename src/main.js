@@ -68,7 +68,7 @@
                         consumed = !nextIsWhitespace;
                         break;
                     case ",": // Intentional fallthrough
-                    case "\"": // Intentional fallthrough
+                    case "`": // Intentional fallthrough
                     case "{": // Intentional fallthrough
                     case "}": // Intentional fallthrough
                     case "[": // Intentional fallthrough
@@ -96,7 +96,7 @@
                         }
                         parts.push(c);
                         i += 1;
-                        consumed = nextIsWhitespace || n === "(" || n === ")" || n === "[" || n === "]" || n === "{" || n === "}" || n === "," || n === "\"";
+                        consumed = nextIsWhitespace || n === "(" || n === ")" || n === "[" || n === "]" || n === "{" || n === "}" || n === "," || n === "`";
                         break;
                 }
 
@@ -233,7 +233,7 @@
                 tks: [current.value],
             });
         },
-        "\"": function (current, scope, stream, path) {
+        "`": function (current, scope, stream, path) {
             const tks = [current.value];
             const items = [];
 
@@ -245,7 +245,7 @@
             scope.push(node);
 
             while (current = stream.next(), !current.done) {
-                if (current.value.tag === "\"") {
+                if (current.value.tag === "`") {
                     break;
                 }
                 tks.push(current.value);
