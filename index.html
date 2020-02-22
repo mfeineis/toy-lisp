@@ -24,7 +24,13 @@
     (let decrement (\ [i] (- i 1)))
     (let increment (λ [i] (+ i 1)))
     (fn inc [i] (+ i 1))
-
+    
+    (fn overkill-inc [x]
+        (fn/pre [x] (> x 0))
+        (fn/post [x ret] (< x ret))
+        (+ x 1)
+    )
+    
     (let greeting `Godspeed You, Black Emperor!`)
     (let data { :answer (inc 41), :vector [1 2 3], :list '(4 5), :inc inc })
 
@@ -44,6 +50,25 @@
         (d/button { :onClick (lambda [e] (h/inc i) } `-1`)
         (d/text (int/toString i))
         (d/button { :onClick (fn [e] (h/inc i) } `+1`)
+    )
+)
+
+(module app/type-foo
+    `Explores the type system`
+
+    (type MachineState
+        (variant enabled :is-affirmative) ;; Acts as a boolean
+        (variant disabled)
+    )
+    
+    (type Maybe [a]
+        (variant just a :has-value)
+        (variant nothing)
+    )
+    
+    (type Nat :is Int
+        (rule [nat] (> nat 0))
+        (variant nat)
     )
 )
 
