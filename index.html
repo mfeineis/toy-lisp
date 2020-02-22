@@ -72,6 +72,12 @@
     )
 )
 
+(module app/without-prelude { :features [:disable-prelude] }
+    `These will not be available with unqualified access +, -, *, /, <, >`
+    (import core/prelude :as p)
+    (js/console.log (p/+ 1 1 1)) ;; -> 3
+)
+
 (app/hello)
 
     </script>
