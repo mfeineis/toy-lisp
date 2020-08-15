@@ -3,91 +3,43 @@
 
 <head>
     <meta charset="utf-8">
-    <title>Lisp Compiler Playground</title>
-    <script src="src/main.js"></script>
+    <title>Kata Lispy Lang</title>
+    <script src="lang.js"></script>
 </head>
 
 <body>
-    <script type="application/x-lisp">
+    <script id="src" type="text/lisp">
 
-(js/console.log `Hello, World!` `...on steroids`)
+    (module
+        """
+        A doc comment.
+        with some escaped \""" stuff
+        """
+        (import Prelude *)
+        (import Host/Js :as js)
+        (export pi square)
 
-;; Some comment
-(module app/hello { :version 0.1.0 }
-    `This is a module demonstrating this toy lisp`
-    (export inc) ;; Another comment
-    (import
-        js
-        mfeineis/some-lib :as lib
+        ; A line comment
+        (let
+            pi 3.14159265
+            literal "A string with ; and escaped \" stuff"
+            msg { :type "do_it" :payload { :one 1 } }
+        )
+
+        (js/console.log literal)
+
+        (fn square [x] (* x x))
     )
-
-    (let decrement (\ [i] (- i 1)))
-    (let increment (λ [i] (+ i 1)))
-    (fn inc [i] (+ i 1))
-    
-    (fn overkill-inc [x]
-        (fn/pre [x] (> x 0))
-        (fn/post [x ret] (< x ret))
-        (+ x 1)
-    )
-    
-    (let greeting `Godspeed You, Black Emperor!`)
-    (let data { :answer (inc 41), :vector [1 2 3], :list '(4 5), :inc inc })
-
-    (js/console.log (:answer data) inc)
-)
-
-(module app/counter
-    `The mandatory counter example`
-    (export render)
-    (import
-         core/dom :as d
-         core/int :as int
-         lab/mvu :as mvu
-         app/hello :as h
-    )
-    (fn render [i]
-        (d/button { :onClick (lambda [e] (h/inc i) } `-1`)
-        (d/text (int/toString i))
-        (d/button { :onClick (fn [e] (h/inc i) } `+1`)
-    )
-)
-
-(module app/type-foo
-    `Explores the type system`
-
-    (type MachineState
-        (variant enabled :is-affirmative) ;; Acts as a boolean
-        (variant disabled)
-    )
-    
-    (type Maybe [a]
-        (variant just a :has-value)
-        (variant nothing)
-    )
-    
-    (type Nat :is Int
-        (rule [nat] (> nat 0))
-        (variant nat)
-    )
-)
-
-(module app/without-prelude { :features [:disable-prelude] }
-    `These will not be available with unqualified access +, -, *, /, <, >`
-    (import core/prelude :as p)
-    (js/console.log (p/+ 1 1 1)) ;; -> 3
-)
-
-(app/hello)
 
     </script>
-
-    <pre id="source" style="background: #eee; border-left: 4px #aaa solid; padding-left: 5px"></pre>
     <script>
 
-    const sourceText = document.querySelector("script[type='application/x-lisp']").innerText;
-    document.querySelector("#source").innerText = sourceText;
-    const program = Compiler.eval(sourceText);
+        const code = document.querySelector("#src").innerText;
+        console.log(code);
+        const ast = Lang.parse(code);
+        console.log(ast);
+        const reconstructed = Lang.print(ast);
+        console.log(reconstructed);
 
     </script>
 </body>

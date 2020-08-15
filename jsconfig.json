@@ -1,12 +1,7 @@
 {
     "compilerOptions": {
-        "strict": true,
-        "alwaysStrict": true,
-        "module": "es6",
-        "target": "ES3",
-        "checkJs": true
-    },
-    "exclude": [
-        "dist"
-    ]
+        "checkJs": true,
+        "module": "es2015",
+        "target": "es6"
+    }
 }
