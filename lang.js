@@ -7,6 +7,11 @@
 
     /** @param code {string}  */
     function parse(code) {
+        const ast = {
+            t: "ROOT",
+            d: [],
+        }
+        const groups = [ast];
         let pos = 0;
         let col = 1;
         let row = 1;
@@ -14,26 +19,22 @@
         let c = '';
         let prev = '';
         let s = [];
-        const ast = {
-            t: "ROOT",
-            d: [],
-        }
-        const groups = [ast];
         let group = ast;
         let expr = null;
         while (t = code[pos]) {
+            expr = {
+                t: "",
+                v: "",
+                pos: pos,
+                col: col,
+                row: row,
+            }
+            s = []
             switch (t) {
                 case "\t":
                     throw new Error("FIXME: Tabs are not allowed right now!");
                 case ";":
-                    expr = {
-                        t: "COMMENT",
-                        v: "",
-                        pos: pos,
-                        col: col,
-                        row: row,
-                    }
-                    s = [];
+                    expr.t = "COMMENT";
                     while (c = code[pos]) {
                         if (c === "\n") {
                             break;
@@ -47,14 +48,7 @@
                     break;
                 case "\n":
                 case " ":
-                    expr = {
-                        t: "WHITESPACE",
-                        v: "",
-                        pos: pos,
-                        col: col,
-                        row: row,
-                    }
-                    s = [];
+                    expr.t = "WHITESPACE";
                     while (c = code[pos]) {
                         if (c === "\n") {
                             s.push(c);
@@ -74,47 +68,11 @@
                     expr.v = s.join("");
                     group.d.push(expr);
                     break;
-                case "(":
-                    group = {
-                        t: "CALL",
-                        d: [],
-                        pos: pos,
-                        col: col,
-                        row: row,
-                    }
-                    groups[groups.length - 1].d.push(group);
-                    groups.push(group);
-                    pos += 1;
-                    col += 1;
-                    break;
-                case ")":
-                    groups.pop();
-                    group = groups[groups.length - 1];
-                    pos += 1;
-                    col += 1;
-                    break;
-                case "[":
-                    group = {
-                        t: "VECTOR",
-                        d: [],
-                        pos: pos,
-                        col: col,
-                        row: row,
-                    }
-                    groups[groups.length - 1].d.push(group);
-                    groups.push(group);
-                    pos += 1;
-                    col += 1;
-                    break;
-                case "]":
-                    groups.pop();
-                    group = groups[groups.length - 1];
-                    pos += 1;
-                    col += 1;
-                    break;
+                case "(": // Intentional fallthrough
+                case "[": // Intentional fallthrough
                 case "{":
                     group = {
-                        t: "MAP",
+                        t: t === "(" ? "CALL" : t === "[" ? "VECTOR" : "MAP",
                         d: [],
                         pos: pos,
                         col: col,
@@ -125,6 +83,8 @@
                     pos += 1;
                     col += 1;
                     break;
+                case ")": // Intentional fallthrough
+                case "]": // Intentional fallthrough
                 case "}":
                     groups.pop();
                     group = groups[groups.length - 1];
@@ -133,14 +93,7 @@
                     break;
                 case '"':
                     if (code.substr(pos, 3) === '"""') {
-                        expr = {
-                            t: "MULTI",
-                            v: "",
-                            pos: pos,
-                            col: col,
-                            row: row,
-                        }
-                        s = [];
+                        expr.t = "MULTI";
                         prev = t;
                         pos += 3;
                         col += 3;
@@ -158,14 +111,7 @@
                         expr.v = s.join("");
                         group.d.push(expr);
                     } else {
-                        expr = {
-                            t: "STRING",
-                            v: "",
-                            pos: pos,
-                            col: col,
-                            row: row,
-                        }
-                        s = [];
+                        expr.t = "STRING";
                         prev = t;
                         pos += 1;
                         col += 1;
@@ -185,18 +131,12 @@
                     }
                     break;
                 case ":":
-                    expr = {
-                        t: "KEYWORD",
-                        v: "",
-                        pos: pos,
-                        col: col,
-                        row: row,
-                    }
-                    s = [":"];
+                    expr.t = "KEYWORD";
+                    s.push(":");
                     pos += 1;
                     col += 1;
                     while (c = code[pos]) {
-                        if (/[()\n\s;\[\]{}:]/.test(c)) {
+                        if (/[()\n ;\[\]{}:]/.test(c)) {
                             break;
                         }
                         s.push(c);
@@ -207,14 +147,7 @@
                     group.d.push(expr);
                     break;
                 default:
-                    expr = {
-                        t: /^[0-9]/.test(t) ? "NUMBER" : "IDENT",
-                        v: "",
-                        pos: pos,
-                        col: col,
-                        row: row,
-                    }
-                    s = [];
+                    expr.t = /^[0-9]/.test(t) ? "NUMBER" : "IDENT";
                     while (c = code[pos]) {
                         if (/[()\n ;\[\]{}:]/.test(c)) {
                             break;
@@ -232,7 +165,6 @@
     }
 
     function traverse(visitors, ast) {
-        const s = [];
         const stack = [ast];
         let node = null;
         let visit = null;
@@ -250,8 +182,6 @@
                 stack.splice.apply(stack, [0, 0].concat(descendents));
             }
         }
-
-        return s.join("");
     }
 
     function surround(pre, post) {
