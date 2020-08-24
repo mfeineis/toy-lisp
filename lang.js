@@ -164,22 +164,31 @@
         return ast;
     }
 
-    function traverse(visitors, ast) {
+    function traverse(visitors, ast, type) {
+        const t = type || "t";
         const stack = [ast];
         let node = null;
         let visit = null;
-        let descendents = null;
+        let descendants = null;
+        let k = 0;
 
         while (stack.length) {
             node = stack[0];
+            k += 1;
+            node.id = k;
             stack.splice(0, 1);
-            visit = visitors[node.t];
-            descendents = node.d;
+            visit = visitors[node[t]];
+            descendants = node.d;
             if (visit) {
-                descendents = visit(node) || node.d;
+                descendants = visit(node) || node.d;
             }
-            if (descendents) {
-                stack.splice.apply(stack, [0, 0].concat(descendents));
+            descendants && descendants.forEach(function (descendant) {
+                // TODO: Maybe it's better to reference nodes by id to not introduce cycles?
+                descendant.p = k;
+                descendant.pp = node;
+            });
+            if (descendants) {
+                stack.splice.apply(stack, [0, 0].concat(descendants));
             }
         }
     }

@@ -10,7 +10,7 @@
 <body>
     <script id="src" type="text/lisp">
 
-    (module
+    (module Math
         """
         A doc comment.
         with some escaped \""" stuff
@@ -26,9 +26,14 @@
             msg { :type "do_it" :payload { :one 1 } }
         )
 
-        (js/console.log literal)
-
         (fn square [x] (* x x))
+
+        (js/console.log literal (square 2))
+    )
+
+    (module :main
+        (import Host/Js :as js)
+        (js/console.log "Hello, World!")
     )
 
     </script>
@@ -37,6 +42,7 @@
         const code = document.querySelector("#src").innerText;
         console.log(code);
         const ast = Lang.parse(code);
+        console.log("AST", ast);
         console.log(ast);
         const reconstructed = Lang.print(ast);
         console.log(reconstructed);
