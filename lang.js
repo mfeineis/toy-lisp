@@ -344,8 +344,155 @@
 
         return ast;
     }
+
+    function generate(ast) {
+        const out = [];
+        const cfg = {
+            ROOT: function (node) {
+                out.push("var ROOT_SCOPE = (function (scope) {\n")
+                const d = node.d.slice();
+                d.push({ tt: "X_ADORN", v: ";return scope;}(Object.create(null)));\n" });
+                return d;
+            },
+            MODULE: function (node) {
+                // console.log("MODULE", node);
+                const d = node.d.slice();
+                // TODO: We need to handle weird module names!
+                const name = node.name || "";
+                if (name) {
+                    out.push("scope['" + name + "'] = ");
+                    out.push("function (" + ") {\nvar scope=Object.create(scope);\n");
+                    d.push({ tt: "X_ADORN", v: "}\n" });
+                } else {
+                    out.push("(function () {\nvar scope=Object.create(scope);\n");
+                    d.push({ tt: "X_ADORN", v: "}());\n" });
+                }
+                return d;
+            },
+            FN: function (node) {
+                // console.log("FN", node);
+                const d = node.d.slice();
+                // TODO: We need to handle weird module names!
+                const name = node.name || "";
+                const args = node.args && node.args.d && node.args.d.map(function (arg) {
+                    return arg.v;
+                }) || [];
+                if (name) {
+                    out.push("scope['" + name + "'] = ");
+                }
+                out.push("function (" + args.join(", ") + ") {\nvar scope=Object.create(scope);\n");
+                d.push({ tt: "X_ADORN", v: "}\n" });
+                return d;
+            },
+            LET: function (node) {
+                let i = 0;
+                let stack = [];
+                while (i < node.d.length) {
+                    // console.log("LET...", node.d[i]);
+                    let n = node.d[i];
+                    if (n.ignore || n.tt === "WHITESPACE") {
+                        i += 1;
+                        continue;
+                    }
+                    stack.push(n);
+                    if (stack.length % 2 === 0) {
+                        const key = stack[stack.length - 2].v;
+                        out.push("scope['" + key + "'] = ");
+                        const subtree = stack[stack.length - 1];
+                        // console.log(key, '=>', subtree);
+                        traverse(cfg, subtree, "tt");
+                        out.push(";");
+                    }
+                    i += 1;
+                }
+                return [];
+            },
+            CALL: function (node) {
+                const name = node.name;
+                out.push("scope['" + name + "'](");
+                node.d.forEach(function (child) {
+                    if (child.ignore || child.tt === "WHITESPACE") {
+                        return;
+                    }
+                    traverse(cfg, child, "tt");
+                    out.push(",");
+                })
+                out.push(")");
+                return [];
+            },
+            // MULTI: function (node) {
+            //     out.push('`' + node.v + '`');
+            // },
+            NUMBER: function (node) {
+                out.push(node.v);
+            },
+            STRING: function (node) {
+                out.push('"' + node.v + '"');
+            },
+            // CALL: function (node) {
+            //     if (node.ignore) {
+            //         return;
+            //     }
+            //     let i = 0;
+            //     let child = node.d[i];
+
+            //     while (child) {
+            //         switch (child.t) {
+            //             case "IDENT":
+            //                 names.push(child.v);
+            //                 break;
+            //             case "MULTI":
+            //                 docs.push(child.v);
+            //                 break;
+            //             default:
+            //                 realChildren.push(child);
+            //                 break;
+            //         }
+            //         i += 1;
+            //         child = node.d[i];
+            //     }
+
+            //     if (docs.length) {
+            //         out.push("/**\n");
+            //         out.push(...docs);
+            //         out.push("\n*/\n");
+            //     }
+            //     if (names[0] === "module" || names[0] === "fn") {
+            //         out.push("function " + (names[1] || names[0]) + "(" + ") ");
+            //         realChildren.splice(0, 0, { t: "X_ADORN", v: "{\n" });
+            //         realChildren.push({ t: "X_ADORN", v: "}\n" });
+            //     } else {
+            //         out.push(names[0]);
+            //         realChildren.splice(0, 0, { t: "X_ADORN", v: "(" });
+            //         realChildren.push({ t: "X_ADORN", v: ")\n" });
+            //     }
+            //     return realChildren;
+            // },
+            // COMMENT: emitValue,
+            IDENT: function (node) {
+                // console.log("IDENT", node);
+                out.push(node.v);
+            },
+            // KEYWORD: emitValue,
+            // MAP: surround("{", "}"),
+            // VECTOR: surround("[", "]"),
+            // WHITESPACE: emitValue,
+            X_ADORN: function (node) {
+                out.push(node.v);
+            },
+        }
+
+        traverse(cfg, ast, "tt");
+
+        return out.join("");
+    }
+
     return {
         annotate: annotate,
+        compile: function (code) {
+            return generate(annotate(parse(code)));
+        },
+        generate: generate,
         parse: parse,
         print: print,
         traverse: traverse,

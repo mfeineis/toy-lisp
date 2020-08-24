@@ -47,6 +47,8 @@
         console.log("annotated AST", annotated);
         const reconstructed = Lang.print(annotated);
         console.log(reconstructed);
+        const generated = Lang.generate(annotated);
+        console.log("generated\n", generated);
 
     </script>
 </body>
