@@ -230,12 +230,125 @@
         return s.join("");
     }
 
+    function clone(it) {
+        return JSON.parse(JSON.stringify(it));
+    }
+
+    function annotate(raw) {
+        const ast = clone(raw);
+
+        function mark(node) {
+            node.tt = node.tt || node.t;
+        }
+
+        function CALL(node) {
+            let args = [];
+            let names = [];
+            let meta = [];
+
+            let i = 0;
+            let child = node.d[i];
+            loop: while (child) {
+                switch (child.t) {
+                    case "IDENT":
+                        names.push(child);
+                        break;
+                    case "KEYWORD":
+                        meta.push(child);
+                        break;
+                    case "MAP":
+                        meta.push(child);
+                        break;
+                    case "MULTI":
+                        child.tt = "DOCS";
+                        meta.push(child);
+                        break;
+                    case "VECTOR":
+                        child.tt = "ARGS";
+                        args = child;
+                        break;
+                    case "WHITESPACE":
+                        break;
+                    default:
+                        break loop;
+                }
+                i += 1;
+                child = node.d[i];
+            }
+
+            switch (names[0].v) {
+                case "export":
+                    node.tt = "EXPORT";
+                    break;
+                case "fn":
+                    node.tt = "FN";
+                    node.args = args;
+                    node.name = names[1] ? names[1].v : null;
+                    node.meta = meta;
+                    names.forEach(function (name) {
+                        name.tt = "FNAME";
+                        name.ignore = true;
+                    });
+                    break;
+                case "import":
+                    node.tt = "IMPORT";
+                    break;
+                case "let":
+                    node.tt = "LET";
+                    names[0].tt = "LNAME";
+                    names[0].ignore = true;
+                    break;
+                case "module":
+                    node.tt = "MODULE";
+                    node.args = args;
+                    node.name = names[1] ? names[1].v : null;
+                    node.meta = meta;
+                    node.exports = [];
+                    node.imports = [];
+                    names.forEach(function (name) {
+                        name.tt = "MNAME";
+                        name.ignore = true;
+                    });
+                    node.d && node.d.forEach(function (child) {
+                        if (child.t === "CALL") {
+                            // TODO: Maybe calling CALL recursively isn't a good idea?
+                            CALL(child);
+                        }
+                        if (child.tt === "IMPORT") {
+                            child.ignore = true;
+                            node.imports.push(child);
+                        }
+                        if (child.tt === "EXPORT") {
+                            child.ignore = true;
+                            node.exports.push(child);
+                        }
+                    });
+                    break;
+                default:
+                    node.name = names[0] ? names[0].v : null;
+                    names[0].tt = "CNAME";
+                    names[0].ignore = true;
+                    node.tt = node.tt || node.t;
+                    break;
+            }
+        }
+
+        traverse({
+            ROOT: mark,
+            CALL: CALL,
+            IDENT: mark,
+            NUMBER: mark,
+            STRING: mark,
+            WHITESPACE: mark,
+        }, ast);
+
+        return ast;
+    }
     return {
+        annotate: annotate,
         parse: parse,
         print: print,
-        compile: function (code) {
-            return print(parse(code));
-        },
+        traverse: traverse,
     };
 }))
 

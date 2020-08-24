@@ -43,8 +43,9 @@
         console.log(code);
         const ast = Lang.parse(code);
         console.log("AST", ast);
-        console.log(ast);
-        const reconstructed = Lang.print(ast);
+        const annotated = Lang.annotate(ast);
+        console.log("annotated AST", annotated);
+        const reconstructed = Lang.print(annotated);
         console.log(reconstructed);
 
     </script>
