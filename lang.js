@@ -289,6 +289,9 @@
                         name.tt = "FNAME";
                         name.ignore = true;
                     });
+                    meta.forEach(function (m) {
+                        m.ignore = true;
+                    });
                     break;
                 case "import":
                     node.tt = "IMPORT";
@@ -308,6 +311,9 @@
                     names.forEach(function (name) {
                         name.tt = "MNAME";
                         name.ignore = true;
+                    });
+                    meta.forEach(function (m) {
+                        m.ignore = true;
                     });
                     node.d && node.d.forEach(function (child) {
                         if (child.t === "CALL") {
@@ -337,8 +343,11 @@
             ROOT: mark,
             CALL: CALL,
             IDENT: mark,
+            KEYWORD: mark,
+            MAP: mark,
             NUMBER: mark,
             STRING: mark,
+            VECTOR: mark,
             WHITESPACE: mark,
         }, ast);
 
@@ -349,9 +358,9 @@
         const out = [];
         const cfg = {
             ROOT: function (node) {
-                out.push("var ROOT_SCOPE = (function (scope) {\n")
+                out.push("var ROOT_SCOPE = (function ($s) {\n")
                 const d = node.d.slice();
-                d.push({ tt: "X_ADORN", v: ";return scope;}(Object.create(null)));\n" });
+                d.push({ tt: "X_ADORN", v: ";return $s;}(Object.create(null)));\n" });
                 return d;
             },
             MODULE: function (node) {
@@ -360,28 +369,36 @@
                 // TODO: We need to handle weird module names!
                 const name = node.name || "";
                 if (name) {
-                    out.push("scope['" + name + "'] = ");
-                    out.push("function (" + ") {\nvar scope=Object.create(scope);\n");
-                    d.push({ tt: "X_ADORN", v: "}\n" });
+                    out.push("$s['" + name + "'] = ");
+                    out.push("function (" + ") {\nvar $s=Object.create($s), $r;\n");
+                    d.push({ tt: "X_ADORN", v: "\n}\n" });
                 } else {
-                    out.push("(function () {\nvar scope=Object.create(scope);\n");
-                    d.push({ tt: "X_ADORN", v: "}());\n" });
+                    out.push("(function () {\nvar $s=Object.create($s), $r;\n");
+                    d.push({ tt: "X_ADORN", v: "\n}());\n" });
                 }
                 return d;
+            },
+            IMPORT: function (node) {
+                return [];
+            },
+            EXPORT: function (node) {
+                return [];
             },
             FN: function (node) {
                 // console.log("FN", node);
                 const d = node.d.slice();
                 // TODO: We need to handle weird module names!
                 const name = node.name || "";
-                const args = node.args && node.args.d && node.args.d.map(function (arg) {
-                    return arg.v;
-                }) || [];
+                const args = node.args && node.args.d && node.args.d || [];
                 if (name) {
-                    out.push("scope['" + name + "'] = ");
+                    out.push("$s['" + name + "'] = ");
                 }
-                out.push("function (" + args.join(", ") + ") {\nvar scope=Object.create(scope);\n");
-                d.push({ tt: "X_ADORN", v: "}\n" });
+                out.push("function () {\nvar $s=Object.create($s), $r;\n");
+                for (let i = 0; i < args.length; i += 1) {
+                    let arg = args[i];
+                    out.push("$s['" + arg.v + "'] = arguments[" + i + "];\n");
+                }
+                d.push({ tt: "X_ADORN", v: ";return $r\n}\n" });
                 return d;
             },
             LET: function (node) {
@@ -397,11 +414,11 @@
                     stack.push(n);
                     if (stack.length % 2 === 0) {
                         const key = stack[stack.length - 2].v;
-                        out.push("scope['" + key + "'] = ");
+                        out.push("$r = $s['" + key + "'] = ");
                         const subtree = stack[stack.length - 1];
                         // console.log(key, '=>', subtree);
                         traverse(cfg, subtree, "tt");
-                        out.push(";");
+                        out.push(";\n");
                     }
                     i += 1;
                 }
@@ -409,15 +426,21 @@
             },
             CALL: function (node) {
                 const name = node.name;
-                out.push("scope['" + name + "'](");
-                node.d.forEach(function (child) {
+                const len = node.d.length;
+                out.push("$r = $s['" + name + "'](");
+                node.d.forEach(function (child, i) {
                     if (child.ignore || child.tt === "WHITESPACE") {
                         return;
                     }
                     traverse(cfg, child, "tt");
-                    out.push(",");
+                    if (i < len - 1) {
+                        out.push(",");
+                    }
                 })
                 out.push(")");
+                return [];
+            },
+            ARGS: function (node) {
                 return [];
             },
             // MULTI: function (node) {
@@ -429,54 +452,57 @@
             STRING: function (node) {
                 out.push('"' + node.v + '"');
             },
-            // CALL: function (node) {
-            //     if (node.ignore) {
-            //         return;
-            //     }
-            //     let i = 0;
-            //     let child = node.d[i];
-
-            //     while (child) {
-            //         switch (child.t) {
-            //             case "IDENT":
-            //                 names.push(child.v);
-            //                 break;
-            //             case "MULTI":
-            //                 docs.push(child.v);
-            //                 break;
-            //             default:
-            //                 realChildren.push(child);
-            //                 break;
-            //         }
-            //         i += 1;
-            //         child = node.d[i];
-            //     }
-
-            //     if (docs.length) {
-            //         out.push("/**\n");
-            //         out.push(...docs);
-            //         out.push("\n*/\n");
-            //     }
-            //     if (names[0] === "module" || names[0] === "fn") {
-            //         out.push("function " + (names[1] || names[0]) + "(" + ") ");
-            //         realChildren.splice(0, 0, { t: "X_ADORN", v: "{\n" });
-            //         realChildren.push({ t: "X_ADORN", v: "}\n" });
-            //     } else {
-            //         out.push(names[0]);
-            //         realChildren.splice(0, 0, { t: "X_ADORN", v: "(" });
-            //         realChildren.push({ t: "X_ADORN", v: ")\n" });
-            //     }
-            //     return realChildren;
-            // },
+            MAP: function (node) {
+                let i = 0;
+                let stack = [];
+                out.push("($r = {\n");
+                while (i < node.d.length) {
+                    // console.log("LET...", node.d[i]);
+                    let n = node.d[i];
+                    if (n.ignore || n.tt === "WHITESPACE") {
+                        i += 1;
+                        continue;
+                    }
+                    stack.push(n);
+                    if (stack.length % 2 === 0) {
+                        const key = stack[stack.length - 2].v;
+                        out.push('"' + key + '": ');
+                        const subtree = stack[stack.length - 1];
+                        // console.log(key, '=>', subtree);
+                        traverse(cfg, subtree, "tt");
+                        out.push(",\n");
+                    }
+                    i += 1;
+                }
+                out.push("})\n");
+                return [];
+            },
+            KEYWORD: function (node) {
+                if (node.ignore) {
+                    return;
+                }
+                out.push('"' + node.v + '"');
+            },
             // COMMENT: emitValue,
             IDENT: function (node) {
                 // console.log("IDENT", node);
-                out.push(node.v);
+                out.push("($r = $s['" + node.v + "'])");
             },
-            // KEYWORD: emitValue,
-            // MAP: surround("{", "}"),
-            // VECTOR: surround("[", "]"),
-            // WHITESPACE: emitValue,
+            VECTOR: function (node) {
+                const len = node.d.length;
+                out.push("($r = [");
+                node.d.forEach(function (child, i) {
+                    if (child.ignore || child.tt === "WHITESPACE") {
+                        return;
+                    }
+                    traverse(cfg, child, "tt");
+                    if (i < len - 1) {
+                        out.push(",");
+                    }
+                })
+                out.push("])");
+                return [];
+            },
             X_ADORN: function (node) {
                 out.push(node.v);
             },
