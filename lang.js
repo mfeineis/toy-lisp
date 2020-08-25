@@ -360,7 +360,7 @@
             ROOT: function (node) {
                 out.push("var ROOT_SCOPE = (function ($s) {\n")
                 const d = node.d.slice();
-                d.push({ tt: "X_ADORN", v: ";return $s;}(Object.create(null)));\n" });
+                d.push({ tt: "X_ADORN", v: ";return $s\n}(Object.create(null)));\n" });
                 return d;
             },
             MODULE: function (node) {
@@ -370,11 +370,23 @@
                 const name = node.name || "";
                 if (name) {
                     out.push("$s['" + name + "'] = ");
-                    out.push("function (" + ") {\nvar $s=Object.create($s), $r;\n");
-                    d.push({ tt: "X_ADORN", v: "\n}\n" });
+                    out.push("function ($s) {\nvar $r;\n");
+                    d.push({ tt: "X_ADORN", v: "\nreturn $r\n}\n" });
                 } else {
-                    out.push("(function () {\nvar $s=Object.create($s), $r;\n");
-                    d.push({ tt: "X_ADORN", v: "\n}());\n" });
+                    out.push("(function ($s) {\nvar $r;\n");
+                    // { Hacky manual imports
+                    out.push("$s['+'] = function ($s, ...rest) {\n");
+                    out.push("return rest.reduce(function (a, b) { return a + b; });\n");
+                    out.push("};\n");
+                    out.push("$s['map'] = function ($s, f, xs) {\n");
+                    out.push("return xs.map(function (x) { return f($s, x); });\n");
+                    out.push("};\n");
+                    out.push("$s['js/Math.PI'] = Math.PI;\n")
+                    out.push("$s['js/console.log'] = function ($s, ...rest) {\n");
+                    out.push("console.log(...rest);");
+                    out.push("\n};\n");
+                    // }
+                    d.push({ tt: "X_ADORN", v: "\nreturn $r\n}(Object.create($s)));\n" });
                 }
                 return d;
             },
@@ -393,10 +405,10 @@
                 if (name) {
                     out.push("$s['" + name + "'] = ");
                 }
-                out.push("function () {\nvar $s=Object.create($s), $r;\n");
+                out.push("function ($s) {\nvar $r;\n");
                 for (let i = 0; i < args.length; i += 1) {
                     let arg = args[i];
-                    out.push("$s['" + arg.v + "'] = arguments[" + i + "];\n");
+                    out.push("$s['" + arg.v + "'] = arguments[" + (i + 1) + "];\n");
                 }
                 d.push({ tt: "X_ADORN", v: ";return $r\n}\n" });
                 return d;
@@ -427,7 +439,7 @@
             CALL: function (node) {
                 const name = node.name;
                 const len = node.d.length;
-                out.push("$r = $s['" + name + "'](");
+                out.push("$r = $s['" + name + "'](Object.create($s),");
                 node.d.forEach(function (child, i) {
                     if (child.ignore || child.tt === "WHITESPACE") {
                         return;
