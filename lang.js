@@ -147,7 +147,7 @@
                     group.d.push(expr);
                     break;
                 default:
-                    expr.t = /^[0-9]/.test(t) ? "NUMBER" : "IDENT";
+                    expr.t = /^[0-9\-]/.test(t) ? "NUMBER" : "IDENT";
                     while (c = code[pos]) {
                         if (/[()\n ;\[\]{}:]/.test(c)) {
                             break;
