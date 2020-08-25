@@ -185,7 +185,7 @@
             descendants && descendants.forEach(function (descendant) {
                 // TODO: Maybe it's better to reference nodes by id to not introduce cycles?
                 descendant.p = k;
-                descendant.pp = node;
+                // descendant.pp = node;
             });
             if (descendants) {
                 stack.splice.apply(stack, [0, 0].concat(descendants));
