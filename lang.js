@@ -254,6 +254,10 @@
                         names.push(child);
                         break;
                     case "KEYWORD":
+                        // TODO: Can keywords be called as getters?
+                        // if (names.length === 0) {
+                        //     names.push(child);
+                        // }
                         meta.push(child);
                         break;
                     case "MAP":
@@ -359,6 +363,8 @@
         const cfg = {
             ROOT: function (node) {
                 out.push("var ROOT_SCOPE = (function ($s) {\n")
+                out.push("const $Array_slice = [].slice;\n")
+                out.push("const $Object_create = Object.create;\n")
                 const d = node.d.slice();
                 d.push({ tt: "X_ADORN", v: ";return $s\n}(Object.create(null)));\n" });
                 return d;
@@ -371,12 +377,12 @@
                 if (name) {
                     out.push("$s['" + name + "'] = ");
                     out.push("function ($s) {\nvar $r;\n");
-                    d.push({ tt: "X_ADORN", v: "\nreturn $r\n}\n" });
+                    d.push({ tt: "X_ADORN", v: "\nreturn $r\n};\n" });
                 } else {
                     out.push("(function ($s) {\nvar $r;\n");
                     // { Hacky manual imports
-                    out.push("$s['+'] = function ($s, ...rest) {\n");
-                    out.push("return rest.reduce(function (a, b) { return a + b; });\n");
+                    out.push("$s['+'] = function ($s, seed) {\n");
+                    out.push("return $Array_slice.call(arguments, 2).reduce(function (a, b) { return a + b; }, seed);\n");
                     out.push("};\n");
                     out.push("$s['map'] = function ($s, f, xs) {\n");
                     out.push("return xs.map(function (x) { return f($s, x); });\n");
@@ -386,7 +392,7 @@
                     out.push("console.log(...rest);");
                     out.push("\n};\n");
                     // }
-                    d.push({ tt: "X_ADORN", v: "\nreturn $r\n}(Object.create($s)));\n" });
+                    d.push({ tt: "X_ADORN", v: "\nreturn $r\n}($Object_create($s)));\n" });
                 }
                 return d;
             },
@@ -439,7 +445,7 @@
             CALL: function (node) {
                 const name = node.name;
                 const len = node.d.length;
-                out.push("$r = $s['" + name + "'](Object.create($s),");
+                out.push("$r = $s['" + name + "']($Object_create($s),");
                 node.d.forEach(function (child, i) {
                     if (child.ignore || child.tt === "WHITESPACE") {
                         return;
