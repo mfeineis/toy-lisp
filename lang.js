@@ -422,9 +422,15 @@
             LET: function (node) {
                 let i = 0;
                 let stack = [];
+                let native = false;
                 while (i < node.d.length) {
                     // console.log("LET...", node.d[i]);
                     let n = node.d[i];
+                    if (n.tt === "KEYWORD" && n.v === ":native") {
+                        native = true;
+                        i += 1;
+                        continue;
+                    }
                     if (n.ignore || n.tt === "WHITESPACE") {
                         i += 1;
                         continue;
@@ -432,11 +438,16 @@
                     stack.push(n);
                     if (stack.length % 2 === 0) {
                         const key = stack[stack.length - 2].v;
-                        out.push("$r = $s['" + key + "'] = ");
                         const subtree = stack[stack.length - 1];
-                        // console.log(key, '=>', subtree);
-                        traverse(cfg, subtree, "tt");
+                        out.push("$r = $s['" + key + "'] = ");
+                        if (native) {
+                            out.push(subtree.v.trim());
+                        } else {
+                            // console.log(key, '=>', subtree);
+                            traverse(cfg, subtree, "tt");
+                        }
                         out.push(";\n");
+                        native = false;
                     }
                     i += 1;
                 }

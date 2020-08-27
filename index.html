@@ -10,12 +10,46 @@
 <body>
     <script id="src" type="text/lisp">
 
+    (module Prelude
+        (export + * map)
+
+        (let
+            :native + """
+            
+            function ($s, seed) {
+                return $Array_slice.call(arguments, 2).reduce(function (a, b) {
+                    return a + b;
+                }, seed);
+            }
+
+            """
+
+            :native * """
+            
+            function ($s, seed) {
+                return $Array_slice.call(arguments, 2).reduce(function (a, b) {
+                    return a * b;
+                }, seed);
+            }
+
+            """
+
+            :native map """
+
+            function ($, f, xs) {
+                return xs.map(function (x) { return f($s, x); });
+            }
+
+            """
+        )
+    )
+
     (module Demo/Math
         """
         A doc comment.
         with some escaped \""" stuff
         """
-        (import Prelude *)
+        (import Prelude + *)
         (export inc square)
 
         ; A line comment
