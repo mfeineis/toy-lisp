@@ -283,6 +283,8 @@
             switch (names[0].v) {
                 case "export":
                     node.tt = "EXPORT";
+                    names[0].tt = "ENAME";
+                    names[0].ignore = true;
                     break;
                 case "fn":
                     node.tt = "FN";
@@ -299,6 +301,9 @@
                     break;
                 case "import":
                     node.tt = "IMPORT";
+                    node.name = names[1] ? names[1].v : null;
+                    names[0].tt = "INAME";
+                    names[0].ignore = true;
                     break;
                 case "let":
                     node.tt = "LET";
@@ -363,8 +368,6 @@
         const cfg = {
             ROOT: function (node) {
                 out.push("var ROOT_SCOPE = (function ($s) {\n")
-                out.push("const $Array_slice = [].slice;\n")
-                out.push("const $Object_create = Object.create;\n")
                 const d = node.d.slice();
                 d.push({ tt: "X_ADORN", v: ";return $s\n}(Object.create(null)));\n" });
                 return d;
@@ -376,23 +379,65 @@
                 const name = node.name || "";
                 if (name) {
                     out.push("$s['" + name + "'] = ");
-                    out.push("function ($s) {\nvar $r;\n");
-                    d.push({ tt: "X_ADORN", v: "\nreturn $r\n};\n" });
+                    out.push("function ($s, $e) {\n");
                 } else {
                     out.push("(function ($s) {\nvar $r;\n");
-                    // { Hacky manual imports
-                    out.push("$s['+'] = function ($s, seed) {\n");
-                    out.push("return $Array_slice.call(arguments, 2).reduce(function (a, b) { return a + b; }, seed);\n");
-                    out.push("};\n");
-                    out.push("$s['map'] = function ($s, f, xs) {\n");
-                    out.push("return xs.map(function (x) { return f($s, x); });\n");
-                    out.push("};\n");
-                    out.push("$s['js/Math.PI'] = Math.PI;\n")
-                    out.push("$s['js/console.log'] = function ($s, ...rest) {\n");
-                    out.push("console.log(...rest);");
-                    out.push("\n};\n");
-                    // }
-                    d.push({ tt: "X_ADORN", v: "\nreturn $r\n}($Object_create($s)));\n" });
+                }
+                (node.imports || []).forEach(function (mod) {
+                    out.push("$import($s");
+                    const all = mod.d || [];
+                    let i = 0;
+                    let ident = null;
+                    while (ident = all[i]) {
+                        let next = null;
+                        let newName = null;
+                        let renaming = false;
+                        let j = i + 1;
+                        while (next = all[j]) {
+                            if (next.ignore || next.tt === "WHITESPACE") {
+                                j += 1;
+                                continue;
+                            }
+                            if (next.tt === "KEYWORD" && next.v === ":as") {
+                                j += 1;
+                                renaming = true;
+                                continue;
+                            }
+                            if (renaming && next.tt === "IDENT") {
+                                newName = next.v;
+                            }
+                            renaming = false;
+                            j += 1;
+                            break;
+                        }
+                        if (ident.ignore || ident.tt !== "IDENT") {
+                            i += 1;
+                            continue;
+                        }
+                        if (newName) {
+                            out.push(",['" + ident.v + "','" + newName + "']");
+                            i = j;
+                        } else {
+                            out.push(",['" + ident.v + "']");
+                            i += 1;
+                        }
+                    }
+                    out.push(");\n");
+                });
+
+                if (name) {
+                    const exports = [];
+                    (node.exports || []).forEach(function (mod) {
+                        mod.d && mod.d.forEach(function (ident) {
+                            if (ident.ignore || ident.tt !== "IDENT") {
+                                return;
+                            }
+                            exports.push("$e['" + ident.v + "'] = $s['" + ident.v + "'];\n");
+                        });
+                    });
+                    d.push({ tt: "X_ADORN", v: exports.join("") + "\nreturn $e\n};\n\n" });
+                } else {
+                    d.push({ tt: "X_ADORN", v: "\nreturn $r\n}($Object_create($s)));\n\n" });
                 }
                 return d;
             },
