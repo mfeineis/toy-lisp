@@ -367,9 +367,9 @@
         const out = [];
         const cfg = {
             ROOT: function (node) {
-                out.push("var ROOT_SCOPE = (function ($s) {\n")
+                out.push("var ROOT_SCOPE = (function ($s) {\n\n")
                 const d = node.d.slice();
-                d.push({ tt: "X_ADORN", v: ";return $s\n}(Object.create(null)));\n" });
+                d.push({ tt: "X_ADORN", v: ";\nreturn $s\n}($Object_create(null)));\n" });
                 return d;
             },
             MODULE: function (node) {
@@ -435,7 +435,7 @@
                             exports.push("$e['" + ident.v + "'] = $s['" + ident.v + "'];\n");
                         });
                     });
-                    d.push({ tt: "X_ADORN", v: exports.join("") + "\nreturn $e\n};\n\n" });
+                    d.push({ tt: "X_ADORN", v: exports.join("") + "return $e\n};\n\n" });
                 } else {
                     d.push({ tt: "X_ADORN", v: "\nreturn $r\n}($Object_create($s)));\n\n" });
                 }
@@ -501,15 +501,13 @@
             CALL: function (node) {
                 const name = node.name;
                 const len = node.d.length;
-                out.push("$r = $s['" + name + "']($Object_create($s),");
+                out.push("$r = $s['" + name + "']($Object_create($s)");
                 node.d.forEach(function (child, i) {
                     if (child.ignore || child.tt === "WHITESPACE") {
                         return;
                     }
+                    out.push(",");
                     traverse(cfg, child, "tt");
-                    if (i < len - 1) {
-                        out.push(",");
-                    }
                 })
                 out.push(")");
                 return [];
