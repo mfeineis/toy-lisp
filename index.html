@@ -58,6 +58,16 @@
 
             """
 
+            :native fold """
+            
+            function ($s, f, seed) {
+                return $Array_slice.call(arguments, 3).reduce(function (a, b) {
+                    return f($, a, b);
+                }, seed);
+            }
+
+            """
+
             :native map """
 
             function ($s, f, xs) {
