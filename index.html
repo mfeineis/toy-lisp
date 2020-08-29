@@ -15,19 +15,20 @@
 
         function $import($s, mod) {
             // console.log("$import(", $s, mod, ", ...);");
-            const exported = $s[mod[0]]($s, $Object_create(null));
+            const exported = $s[mod[0]]($Object_create($s));
+            const isRenamed = mod.length > 1;
             // $s[mod[0]] = exported;
-            if (mod.length > 1) {
-                const prefix = mod[1] + "/";
-                $Object_keys(exported).forEach(function (name) {
-                    $s[prefix + name] = exported[name];
-                });
-            }
+            const prefix = isRenamed ? mod[1] + "/" : mod[0] + "/";
+            // if (isRenamed) {
+            //     $s[mod[1]] = exported;
+            // }
+            $Object_keys(exported).forEach(function (name) {
+                $s[prefix + name] = exported[name];
+            });
             $Array_slice.call(arguments, 2).forEach(function (pair) {
                 $s[pair[1] || pair[0]] = exported[pair[0]];
             });
             // console.log("$import", mod, "...", $s);
-            return $s;
         }
 
     </script>
@@ -110,8 +111,20 @@
             msg { :type "do_it" :payload { :one 1 } }
             almost-pi (inc 2.14159265)
         )
-        (js/console.log "Hello, World!" nat [:x] almost-pi fib literal msg pi)
+        (js/console.log "Hello, World!" nat [:x] almost-pi fib literal msg pi (Prelude))
     )
+
+    (let
+        :native debug """
+        
+        function () {
+            console.log("ROOT", "$s", $s);
+        }
+
+        """
+    )
+
+    ;(debug)
 
     </script>
     <script>

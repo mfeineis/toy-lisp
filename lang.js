@@ -379,7 +379,7 @@
                 const name = node.name || "";
                 if (name) {
                     out.push("$s['" + name + "'] = ");
-                    out.push("function ($s, $e) {\n");
+                    out.push("function ($s) {\nvar $e = $Object_create(null);\n");
                 } else {
                     out.push("(function ($s) {\nvar $r;\n");
                 }
