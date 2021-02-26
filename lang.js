@@ -246,14 +246,22 @@
             let names = [];
             let meta = [];
 
+            // `let` is a special form that doesn't change the semantics of its children
+            let isLet = false;
             let i = 0;
             let child = node.d[i];
             loop: while (child) {
                 switch (child.t) {
                     case "IDENT":
                         names.push(child);
+                        if (names.length === 1 && child.v === "let") {
+                            isLet = true;
+                        }
                         break;
                     case "KEYWORD":
+                        if (isLet) {
+                            break;
+                        }
                         // TODO: Can keywords be called as getters?
                         // if (names.length === 0) {
                         //     names.push(child);
@@ -261,13 +269,23 @@
                         meta.push(child);
                         break;
                     case "MAP":
+                        if (isLet) {
+                            break;
+                        }
                         meta.push(child);
                         break;
                     case "MULTI":
+                        if (isLet) {
+                            break;
+                        }
                         child.tt = "DOCS";
                         meta.push(child);
                         break;
                     case "VECTOR":
+                        if (isLet) {
+                            break;
+                        }
+                        // console.log("CALL", "...", "VECTOR", child, { names, meta, args })
                         child.tt = "ARGS";
                         args = child;
                         break;
