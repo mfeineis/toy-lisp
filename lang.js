@@ -450,7 +450,7 @@
                             if (ident.ignore || ident.tt !== "IDENT") {
                                 return;
                             }
-                            exports.push("$e['" + ident.v + "'] = $s['" + ident.v + "'];\n");
+                            exports.push(";$e['" + ident.v + "'] = $s['" + ident.v + "']\n");
                         });
                     });
                     d.push({ tt: "X_ADORN", v: exports.join("") + "return $e\n};\n\n" });
@@ -472,7 +472,7 @@
                 const name = node.name || "";
                 const args = node.args && node.args.d && node.args.d || [];
                 if (name) {
-                    out.push("$s['" + name + "'] = ");
+                    out.push(";$s['" + name + "'] = ");
                 }
                 out.push("function ($s) {\nvar $r;\n");
                 for (let i = 0; i < args.length; i += 1) {
@@ -502,7 +502,7 @@
                     if (stack.length % 2 === 0) {
                         const key = stack[stack.length - 2].v;
                         const subtree = stack[stack.length - 1];
-                        out.push("$r = $s['" + key + "'] = ");
+                        out.push(";$r = $s['" + key + "'] = ");
                         if (native) {
                             out.push(subtree.v.trim());
                         } else {
