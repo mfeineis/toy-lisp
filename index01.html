@@ -1,0 +1,160 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8">
+    <title>Kata Lispy Lang</title>
+    <script src="lang.js"></script>
+</head>
+
+<body>
+    <script>
+        var $Array_slice = [].slice;
+        var $Object_create = Object.create;
+        var $Object_keys = Object.keys;
+
+        function $import($s, mod) {
+            // console.log("$import(", $s, mod, ", ...);");
+            const exported = $s[mod[0]]($Object_create($s));
+            const isRenamed = mod.length > 1;
+            // $s[mod[0]] = exported;
+            const prefix = isRenamed ? mod[1] + "/" : mod[0] + "/";
+            // if (isRenamed) {
+            //     $s[mod[1]] = exported;
+            // }
+            $Object_keys(exported).forEach(function (name) {
+                $s[prefix + name] = exported[name];
+            });
+            $Array_slice.call(arguments, 2).forEach(function (pair) {
+                $s[pair[1] || pair[0]] = exported[pair[0]];
+            });
+            // console.log("$import", mod, "...", $s);
+        }
+
+    </script>
+    <script id="src" type="text/x-lisp">
+
+    (module Prelude
+        (export + * map)
+
+        (let
+            :native + """
+            
+            function ($s, seed) {
+                return $Array_slice.call(arguments, 2).reduce(function (a, b) {
+                    return a + b;
+                }, seed);
+            }
+
+            """
+
+            :native * """
+            
+            function ($s, seed) {
+                return $Array_slice.call(arguments, 2).reduce(function (a, b) {
+                    return a * b;
+                }, seed);
+            }
+
+            """
+
+            :native fold """
+            
+            function ($s, f, seed) {
+                return $Array_slice.call(arguments, 3).reduce(function (a, b) {
+                    return f($, a, b);
+                }, seed);
+            }
+
+            """
+
+            :native map """
+
+            function ($s, f, xs) {
+                return xs.map(function (x) { return f($s, x); });
+            }
+
+            """
+        )
+    )
+
+    (module System/Unsafe/ECMAScript
+       (export console.log)
+
+       (let
+           :native console.log """
+
+           function ($s, ...rest) {
+               console.log(...rest);
+           }
+
+           """
+       )
+    )
+
+    (module Demo/Math
+        """
+        A doc comment.
+        with some escaped \""" stuff
+        """
+        (import Prelude + *)
+        (export pi inc square)
+
+        ; A line comment
+        (fn square [x] (* x x))
+        (fn inc [x] (+ x 1))
+
+        (let
+            :native pi "Math.PI"
+        )
+    )
+
+    (module ;:main
+        (import Prelude + map)
+        (import System/Unsafe/ECMAScript :as js)
+        (import Demo/Math inc pi)
+
+        (let
+            nat (map (fn [x] (+ x 1 (inc -1))) [0 1 2])
+            fib [{:k :v} 1 1 2 3 5 8 13 []]
+            literal "A string with ; and escaped \" stuff"
+            msg { :type "do_it" :payload { :one 1 } }
+            almost-pi (inc 2.14159265)
+        )
+        (js/console.log "Hello, World!" nat [:x] almost-pi fib literal msg pi (Prelude))
+    )
+
+    (let
+        :native debug """
+        
+        function () {
+            console.log("ROOT", "$s", $s);
+        }
+
+        """
+    )
+
+    ;(debug)
+
+    </script>
+    <script>
+
+        const code = document.querySelector("#src").innerText;
+        console.log(code);
+        const ast = Lang.parse(code);
+        console.log("AST", ast);
+        const annotated = Lang.annotate(ast);
+        console.log("annotated AST", annotated);
+        const reconstructed = Lang.print(annotated);
+        console.log(reconstructed);
+        const generated = Lang.generate(annotated);
+        console.log(generated);
+
+        const script = document.createElement("script");
+        script.appendChild(document.createTextNode(generated));
+        document.body.appendChild(script);
+
+    </script>
+</body>
+
+</html>
