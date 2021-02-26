@@ -165,6 +165,7 @@
     }
 
     function traverse(visitors, ast, type) {
+        // console.log("traverse(", visitors, ast, type, ")")
         const t = type || "t";
         const stack = [ast];
         let node = null;
@@ -579,6 +580,7 @@
                 out.push("($r = $s['" + node.v + "'])");
             },
             VECTOR: function (node) {
+                // console.log("VECTOR", node)
                 const len = node.d.length;
                 out.push("($r = [");
                 node.d.forEach(function (child, i) {
