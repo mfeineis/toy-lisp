@@ -475,12 +475,13 @@
                 if (name) {
                     out.push(";$s['" + name + "'] = ");
                 }
-                out.push("function ($s) {\nvar $r;\n");
+                // FIXME: Merging lexical and runtime scope is really ugly right now!
+                out.push("(function ($ls) { return function ($rs) {\nvar $r, $s = $mergeScopes($ls, $rs);\n");
                 for (let i = 0; i < args.length; i += 1) {
                     let arg = args[i];
                     out.push("$s['" + arg.v + "'] = arguments[" + (i + 1) + "];\n");
                 }
-                d.push({ tt: "X_ADORN", v: ";return $r\n}\n" });
+                d.push({ tt: "X_ADORN", v: ";return $r\n}; }($s))\n" });
                 return d;
             },
             LET: function (node) {

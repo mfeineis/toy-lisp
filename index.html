@@ -12,6 +12,7 @@
         var $Array_slice = [].slice;
         var $Object_create = Object.create;
         var $Object_keys = Object.keys;
+        var $Object_assign = Object.assign;
 
         function $import($s, mod) {
             // console.log("$import(", $s, mod, ", ...);");
@@ -31,8 +32,75 @@
             // console.log("$import", mod, "...", $s);
         }
 
+        function $mergeScopes($ls, $rs) {
+            // console.log("$mergeScopes", $ls, $rs);
+            return $Object_assign($Object_create($ls), $rs);
+        }
+
     </script>
-    <script id="src" type="text/lisp">
+    <script id="lang" type="text/x-lisp">
+    
+    (module System/Lang
+        (export parse console.log)
+
+        (let
+            :native console.log """
+
+            function ($s, ...rest) {
+                console.log(...rest);
+            }
+
+            """
+        )
+
+        (console.log "console.log works!")
+
+        (fn parse [code]
+            (let
+                ast { :t "ROOT" :d [] }
+                groups [ast]
+                pos 0
+                col 1
+                row 1
+                t 0
+                c ""
+                prev ""
+                s []
+                group ast
+                expr 0
+            )
+            (console.log { :ast ast :groups groups })
+        )
+    )
+
+    (module
+        (import System/Lang)
+
+        (System/Lang/parse "(let x 0)")
+    )
+
+    </script>
+    <script>
+    {    
+    
+        const code = document.querySelector("#lang").innerText;
+        console.log(code);
+        const ast = Lang.parse(code);
+        console.log("AST", ast);
+        const annotated = Lang.annotate(ast);
+        console.log("annotated AST", annotated);
+        const reconstructed = Lang.print(annotated);
+        console.log(reconstructed);
+        const generated = Lang.generate(annotated);
+        console.log(generated);
+
+        const script = document.createElement("script");
+        script.appendChild(document.createTextNode(generated));
+        document.body.appendChild(script);
+
+    }
+    </script>
+    <script id="src" type="text/x-lisp">
 
     (module Prelude
         (export + * map)
@@ -134,11 +202,11 @@
         """
     )
 
-    ;(debug)
+    (debug)
 
     </script>
     <script>
-
+    {
         const code = document.querySelector("#src").innerText;
         console.log(code);
         const ast = Lang.parse(code);
@@ -153,7 +221,7 @@
         const script = document.createElement("script");
         script.appendChild(document.createTextNode(generated));
         document.body.appendChild(script);
-
+    }
     </script>
 </body>
 
